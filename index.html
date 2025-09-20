@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Simple HTML5 Webcam Test - Local Only, No Data Collected or Recorded</title>
+
+  <meta name="description"
+    content="Test your webcam safely with this simple HTML5 page. Everything runs locally on your device. No data is collected, recorded, or stored.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      background: black;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: black;
+      display: block;
+    }
+
+    h1,
+    h2,
+    h3 {
+      color: white;
+    }
+
+    #divOverlay {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+
+    #buttonStartCamera {
+      font-size: 200%;
+      padding: 1.3em 2.6em;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="divOverlay">
+    <h1>THIS SITE DOES NOT COLLECT ANY DATA.</h1>
+    <h1>NOTHING FROM YOUR CAMERA IS RECORDED.</h1>
+    <h1>EVERYTHING RUNS LOCALLY ON YOUR DEVICE.</h1>
+    <h3>Camera access is used only to show you the live feed.</h3>
+    <button id="buttonStartCamera">Start Camera</button>
+    <h3>
+      I built this for personal use.
+      <a href="https://github.com/ribas89/webcam-test-no-record-fullscreen" target="_blank"
+        rel="noopener noreferrer">View the source code on GitHub.</a>
+    </h3>
+  </div>
+  <video id="video" autoplay playsinline muted></video>
+
+  <script>
+    const tagVideo = document.getElementById('video');
+    const divOverlay = document.getElementById('divOverlay');
+    const buttonStartCamera = document.getElementById('buttonStartCamera');
+    let stream = null;
+    let track = null;
+    let resizeDebounceTimeout = null;
+
+    async function startCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: window.innerWidth },
+            height: { ideal: window.innerHeight },
+            aspectRatio: { ideal: window.innerWidth / window.innerHeight }
+          }
+        });
+
+        track = stream.getVideoTracks()[0]
+        tagVideo.srcObject = stream;
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function adjustSize() {
+      if (!stream || !track) {
+        startCamera();
+        return;
+      }
+
+      try {
+        await track.applyConstraints({
+          width: { ideal: window.innerWidth },
+          height: { ideal: window.innerHeight },
+          aspectRatio: { ideal: window.innerWidth / window.innerHeight }
+        })
+      } catch (err) {
+        console.warn("Constraint adjust failed:", err.message)
+      }
+    }
+
+
+    function debounceAdjust() {
+      if (resizeDebounceTimeout) clearTimeout(resizeDebounceTimeout);
+      resizeDebounceTimeout = setTimeout(adjustSize, 200); // waits 200ms after last resize event
+    }
+
+
+    window.addEventListener("load", () => {
+      buttonStartCamera.addEventListener("click", () => {
+        startCamera();
+        window.addEventListener("resize", debounceAdjust);
+        document.addEventListener("fullscreenchange", debounceAdjust);
+        divOverlay.style.display = "none";
+      });
+    });
+  </script>
+</body>
+
+</html>
